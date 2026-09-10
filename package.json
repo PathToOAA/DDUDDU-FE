@@ -2,10 +2,12 @@
   "name": "dduddu-fe",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@11.2.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "llm:test": "node scripts/test-gemini.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

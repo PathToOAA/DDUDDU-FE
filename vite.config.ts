@@ -7,6 +7,10 @@ export default defineConfig({
 
   server: {
     proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
       "/tour-api": {
         target: "https://apis.data.go.kr",
         changeOrigin: true,
