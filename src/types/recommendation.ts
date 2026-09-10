@@ -9,6 +9,11 @@ export type TravelTheme =
   | "HEALING";
 
 export type RecommendationOptionsResponse = {
+  regions: {
+    code: string;
+    label: string;
+  }[];
+
   themes: {
     code: TravelTheme;
     label: string;
