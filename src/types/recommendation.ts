@@ -40,3 +40,39 @@ export type PlaceCandidateResponse = {
     categoryCode: string;
   }[];
 };
+
+export type TravelType = "DAY_TRIP" | "ONE_NIGHT" | "TWO_NIGHTS";
+export type WalkingPreference = "LOW" | "MEDIUM" | "HIGH";
+export type IncludedCost = "TRANSPORT" | "FOOD" | "ACCOMMODATION";
+
+export type RecommendationRequest = {
+  regionCode: string;
+  themes: TravelTheme[];
+  travelType: TravelType;
+  startTime: string;
+  endTime: string;
+  budget: number;
+  walkingPreference: WalkingPreference;
+  includedCosts: IncludedCost[];
+};
+
+export type RecommendationPreparationResponse = {
+  conditions: RecommendationRequest;
+  candidates: PlaceCandidateResponse;
+};
+
+export type CourseDraft = {
+  title: string;
+  reason: string;
+  days: {
+    day: number;
+    contentIds: string[];
+  }[];
+};
+
+export type RecommendationDraftResponse = {
+  conditions: RecommendationRequest;
+  courses: CourseDraft[];
+  places: PlaceCandidateResponse["places"];
+  candidatePoolLimited: boolean;
+};

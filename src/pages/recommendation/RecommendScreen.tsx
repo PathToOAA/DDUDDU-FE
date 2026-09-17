@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import ScreenHeader from "../../components/common/ScreenHeader";
 import FormBlock from "../../components/common/FormBlock";
 import Segmented from "../../components/common/Segmented";
-import { fetchPlaceCandidates } from "../../api/recommendationApi";
+import { generateRecommendationDrafts } from "../../api/recommendationApi";
+import CourseDraftResults from "./CourseDraftResults";
 import type {
-  PlaceCandidateRequest,
-  PlaceCandidateResponse,
+  IncludedCost,
+  RecommendationDraftResponse,
   RecommendationOptionsResponse,
+  RecommendationRequest,
   TravelTheme,
+  TravelType,
+  WalkingPreference,
 } from "../../types/recommendation";
 
 const SUPPORTED_CANDIDATE_THEMES: TravelTheme[] = [
@@ -19,11 +23,29 @@ const SUPPORTED_CANDIDATE_THEMES: TravelTheme[] = [
   "CULTURE_HISTORY",
 ];
 
+const TRAVEL_OPTIONS: { value: TravelType; label: string }[] = [
+  { value: "DAY_TRIP", label: "당일치기" },
+  { value: "ONE_NIGHT", label: "1박 2일" },
+  { value: "TWO_NIGHTS", label: "2박 3일" },
+];
+
+const WALKING_OPTIONS: { value: WalkingPreference; label: string }[] = [
+  { value: "LOW", label: "적게 걷기" },
+  { value: "MEDIUM", label: "적당히 걷기" },
+  { value: "HIGH", label: "많이 걸어도 좋아요" },
+];
+
+const COST_OPTIONS: { value: IncludedCost; label: string }[] = [
+  { value: "TRANSPORT", label: "교통비 포함" },
+  { value: "FOOD", label: "식비 포함" },
+  { value: "ACCOMMODATION", label: "숙박비 포함" },
+];
+
 export default function RecommendScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [candidateResult, setCandidateResult] =
-    useState<PlaceCandidateResponse | null>(null);
+  const [draftResult, setDraftResult] =
+    useState<RecommendationDraftResponse | null>(null);
 
   const [regionCode, setRegionCode] = useState("");
   const [regions, setRegions] = useState<
@@ -35,6 +57,19 @@ export default function RecommendScreen() {
   );
 
   const [selectedThemes, setSelectedThemes] = useState<TravelTheme[]>([]);
+
+  const [travelType, setTravelType] = useState<TravelType>("DAY_TRIP");
+  const [walkingPreference, setWalkingPreference] =
+    useState<WalkingPreference>("MEDIUM");
+
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [budget, setBudget] = useState(70000);
+
+  const [includedCosts, setIncludedCosts] = useState<IncludedCost[]>([
+    "TRANSPORT",
+    "FOOD",
+  ]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +128,7 @@ export default function RecommendScreen() {
         : [...previous, code],
     );
 
-    setCandidateResult(null);
+    setDraftResult(null);
     setSearchError(null);
   }
 
@@ -108,26 +143,40 @@ export default function RecommendScreen() {
       return;
     }
 
-    const request: PlaceCandidateRequest = {
+    setSearchError(null);
+    setDraftResult(null);
+
+    if (!startTime || !endTime) {
+      setSearchError("관광 시작 시간과 종료 시간을 입력해주세요.");
+      return;
+    }
+
+    if (startTime >= endTime) {
+      setSearchError("종료 시간은 시작 시간보다 늦게 설정해주세요.");
+      return;
+    }
+
+    const request: RecommendationRequest = {
       regionCode,
-      themes: selectedThemes,
+      themes: [...selectedThemes],
+      travelType,
+      startTime,
+      endTime,
+      budget,
+      walkingPreference,
+      includedCosts: [...includedCosts],
     };
 
     setIsSearching(true);
-    setSearchError(null);
-    setCandidateResult(null);
 
     try {
-      const result = await fetchPlaceCandidates(request);
-
-      setCandidateResult(result);
-      console.log("후보 조회 요청:", request);
-      console.log("후보 조회 결과:", result);
+      const result = await generateRecommendationDrafts(request);
+      setDraftResult(result);
     } catch (error) {
       setSearchError(
         error instanceof Error
           ? error.message
-          : "장소 후보를 조회하지 못했어요.",
+          : "코스를 생성하지 못했어요. 잠시 후 다시 시도해주세요.",
       );
     } finally {
       setIsSearching(false);
@@ -147,7 +196,7 @@ export default function RecommendScreen() {
           disabled={isLoading || isSearching || error !== null}
           onChange={(event) => {
             setRegionCode(event.target.value);
-            setCandidateResult(null);
+            setDraftResult(null);
             setSearchError(null);
           }}
           className="w-full rounded-lg border border-[#b9ddc3] bg-white px-4 py-3 text-sm disabled:opacity-50"
@@ -166,16 +215,68 @@ export default function RecommendScreen() {
 
       <FormBlock label="여행 기간">
         <Segmented
-          options={["당일치기", "1박 2일", "2박 3일"]}
-          activeIndex={0}
+          options={TRAVEL_OPTIONS.map((option) => option.label)}
+          activeIndex={TRAVEL_OPTIONS.findIndex(
+            (option) => option.value === travelType,
+          )}
+          disabled={isSearching}
+          onChange={(index) => {
+            const option = TRAVEL_OPTIONS[index];
+            if (!option) return;
+
+            setTravelType(option.value);
+
+            if (option.value === "DAY_TRIP") {
+              setIncludedCosts((prev) =>
+                prev.filter((cost) => cost !== "ACCOMMODATION"),
+              );
+            }
+          }}
         />
       </FormBlock>
 
-      <FormBlock label="이동 방식">
+      <FormBlock label="걷기 선호도">
         <Segmented
-          options={["대중교통 중심", "도보 중심", "걷는 거리 최소화"]}
-          activeIndex={0}
+          options={WALKING_OPTIONS.map((option) => option.label)}
+          activeIndex={WALKING_OPTIONS.findIndex(
+            (option) => option.value === walkingPreference,
+          )}
+          disabled={isSearching}
+          onChange={(index) => {
+            const option = WALKING_OPTIONS[index];
+            if (option) setWalkingPreference(option.value);
+          }}
         />
+      </FormBlock>
+
+      <FormBlock label="하루 관광 시간">
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm">
+            시작 시간
+            <input
+              type="time"
+              value={startTime}
+              disabled={isSearching}
+              onChange={(event) => setStartTime(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-[#e4e8e5] p-3"
+            />
+          </label>
+
+          <label className="text-sm">
+            종료 시간
+            <input
+              type="time"
+              value={endTime}
+              disabled={isSearching}
+              onChange={(event) => setEndTime(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-[#e4e8e5] p-3"
+            />
+          </label>
+        </div>
+
+        <p className="mt-2 text-xs text-[#68736c]">
+          여러 날 여행하면 매일 같은 관광 시간대를 적용해요.
+        </p>
       </FormBlock>
 
       <FormBlock label="관심 테마">
@@ -223,29 +324,63 @@ export default function RecommendScreen() {
 
       <FormBlock label="예산 설정">
         <div className="text-left">
-          <p className="mb-3 text-2xl font-extrabold">70,000원</p>
+          <p className="mb-1 text-2xl font-extrabold">
+            {budget.toLocaleString("ko-KR")}원
+          </p>
+
+          <p className="mb-3 text-xs text-[#68736c]">
+            1인 기준 여행 전체 예산이에요.
+          </p>
+
           <input
             type="range"
-            min="10000"
-            max="200000"
-            defaultValue="70000"
+            aria-label="여행 예산"
+            min={10000}
+            max={200000}
+            step={1000}
+            value={budget}
+            disabled={isSearching}
+            onChange={(event) => setBudget(Number(event.target.value))}
             className="w-full accent-[#16883b]"
           />
+
           <div className="mt-1 flex justify-between text-xs text-[#68736c]">
-            <span>10,000</span>
-            <span>200,000+</span>
+            <span>10,000원</span>
+            <span>200,000원</span>
           </div>
+
           <div className="mt-5 grid grid-cols-3 gap-2 text-sm">
-            {["교통비 포함", "식비 포함", "숙박비 포함"].map((item, index) => (
-              <label key={item} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  defaultChecked={index < 2}
-                  className="h-4 w-4 accent-[#16883b]"
-                />
-                {item}
-              </label>
-            ))}
+            {COST_OPTIONS.map((option) => {
+              const disabled =
+                isSearching ||
+                (travelType === "DAY_TRIP" && option.value === "ACCOMMODATION");
+
+              return (
+                <label
+                  key={option.value}
+                  className={`flex items-center gap-2 ${
+                    disabled ? "opacity-50" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={includedCosts.includes(option.value)}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+
+                      setIncludedCosts((previous) =>
+                        checked
+                          ? [...previous, option.value]
+                          : previous.filter((cost) => cost !== option.value),
+                      );
+                    }}
+                    className="h-4 w-4 accent-[#16883b]"
+                  />
+                  {option.label}
+                </label>
+              );
+            })}
           </div>
         </div>
       </FormBlock>
@@ -262,45 +397,46 @@ export default function RecommendScreen() {
         }
         className="mt-6 w-full rounded-lg bg-[#16883b] py-4 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSearching ? "관광지를 알아보고 있어요…" : "장소 후보 조회하기"}
+        {isSearching
+          ? "여행 코스를 만들고 있어요…"
+          : searchError
+            ? "여행 코스 다시 만들기"
+            : "여행 코스 만들기"}{" "}
       </button>
 
-      {searchError && (
-        <p role="alert" className="mt-4 text-sm text-red-600">
-          {searchError}
-        </p>
-      )}
+      {isSearching && (
+        <div
+          role="status"
+          className="mt-5 rounded-xl bg-[#eef8f0] p-5 text-center"
+        >
+          <div
+            aria-hidden="true"
+            className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#b9ddc3] border-t-[#16883b]"
+          />
 
-      {candidateResult && (
-        <div className="mt-6" aria-live="polite">
-          <p className="font-bold">
-            장소 후보 {candidateResult.count}개를 찾았어요.
+          <p className="mt-3 font-bold text-[#16883b]">
+            여행 코스를 만들고 있어요
           </p>
 
-          {candidateResult.truncated && (
-            <p className="mt-2 text-sm text-amber-700">
-              조회 한도에 도달하여 일부 후보만 표시합니다.
-            </p>
-          )}
-
-          {candidateResult.count === 0 && (
-            <p className="mt-2 text-sm text-gray-500">
-              선택한 조건에 맞는 장소가 없어요.
-            </p>
-          )}
-
-          <ul className="mt-3 space-y-2">
-            {candidateResult.places.map((place) => (
-              <li
-                key={place.contentId}
-                className="rounded-lg border border-gray-200 p-3"
-              >
-                <p className="font-semibold">{place.title}</p>
-                <p className="mt-1 text-sm text-gray-500">{place.address}</p>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-2 text-sm leading-6 text-gray-600">
+            관광지 후보 조회와 AI 코스 생성을 진행해요.
+            <br />
+            완료되면 아래에 결과를 보여드릴게요.
+          </p>
         </div>
+      )}
+
+      {searchError && (
+        <div
+          role="alert"
+          className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700"
+        >
+          {searchError}
+        </div>
+      )}
+
+      {draftResult && !isSearching && (
+        <CourseDraftResults result={draftResult} />
       )}
     </section>
   );

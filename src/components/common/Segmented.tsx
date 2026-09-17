@@ -1,16 +1,24 @@
+type SegmentedProps = {
+  options: string[];
+  activeIndex: number;
+  onChange: (index: number) => void;
+  disabled?: boolean;
+};
+
 export default function Segmented({
   options,
   activeIndex,
-}: {
-  options: string[];
-  activeIndex: number;
-}) {
+  onChange,
+  disabled = false,
+}: SegmentedProps) {
   return (
     <div className="flex gap-2">
       {options.map((option, index) => (
         <button
           key={option}
           type="button"
+          disabled={disabled}
+          onClick={() => onChange(index)}
           className={`flex-1 rounded-lg border px-3 py-3 text-sm font-bold ${
             index === activeIndex
               ? "border-[#b9ddc3] bg-[#eef8f0] text-[#16883b]"
