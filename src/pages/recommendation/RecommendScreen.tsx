@@ -13,6 +13,7 @@ import type {
   WalkingPreference,
 } from "../../types/recommendation";
 import useRecommendationJob from "./hooks/useRecommendationJob";
+import { apiUrl } from "../../api/apiUrl";
 
 const SUPPORTED_CANDIDATE_THEMES: TravelTheme[] = [
   "SEA",
@@ -81,7 +82,7 @@ export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: Rec
 
     async function loadOptions() {
       try {
-        const response = await fetch("/api/recommendation-options", {
+        const response = await fetch(apiUrl("/api/recommendation-options"), {
           signal: controller.signal,
         });
 
