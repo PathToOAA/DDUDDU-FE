@@ -4,11 +4,12 @@ import type {
   RecommendationPreparationResponse,
   RecommendationRequest,
 } from "../types/recommendation";
+import { apiUrl } from "./apiUrl";
 
 export async function prepareRecommendation(
   request: RecommendationRequest,
 ): Promise<RecommendationPreparationResponse> {
-  const response = await fetch("/api/recommendations/prepare", {
+  const response = await fetch(apiUrl("/api/recommendations/prepare"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -43,7 +44,7 @@ export async function prepareRecommendation(
 export async function generateRecommendationDrafts(
   request: RecommendationRequest,
 ): Promise<RecommendationDraftResponse> {
-  const response = await fetch("/api/recommendations/drafts", {
+  const response = await fetch(apiUrl("/api/recommendations/drafts"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -113,7 +114,7 @@ export async function createRecommendationJob(
   request: RecommendationRequest,
   signal: AbortSignal,
 ): Promise<RecommendationJobResponse> {
-  const response = await fetch("/api/recommendations/jobs", {
+  const response = await fetch(apiUrl("/api/recommendations/jobs"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -130,7 +131,7 @@ export async function fetchRecommendationJob(
   signal: AbortSignal,
 ): Promise<RecommendationJobResponse> {
   const response = await fetch(
-    `/api/recommendations/jobs/${encodeURIComponent(jobId)}`,
+    apiUrl(`/api/recommendations/jobs/${encodeURIComponent(jobId)}`),
     {
       signal,
       cache: "no-store",
