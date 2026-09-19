@@ -2,6 +2,8 @@ import { recommendedCourses } from "../../data/mockCourses";
 import type { CourseSummary } from "../../data/mockCourses";
 import ScreenHeader from "../../components/common/ScreenHeader";
 import CourseResultCard from "../../components/course/CourseResultCard";
+import { saveCourse } from "../../api/savedCourseApi";
+import { useState } from "react";
 
 export default function ResultsScreen({
   onBack,
@@ -10,6 +12,7 @@ export default function ResultsScreen({
   onBack: () => void;
   onOpenCourse: (course: CourseSummary) => void;
 }) {
+  const [savedIds, setSavedIds] = useState<number[]>([]);
   return (
     <section className="pt-6">
       <div className="px-5">
@@ -36,8 +39,13 @@ export default function ResultsScreen({
             key={course.id}
             course={course}
             onClick={() => onOpenCourse(course)}
+            onSave={async () => {
+              await saveCourse(course);
+              setSavedIds((ids) => ids.includes(course.id) ? ids : [...ids, course.id]);
+            }}
           />
         ))}
+        {savedIds.length > 0 && <p className="text-center text-xs text-[#16883b]">저장한 코스가 내 저장 탭에 추가됐어요.</p>}
       </div>
     </section>
   );

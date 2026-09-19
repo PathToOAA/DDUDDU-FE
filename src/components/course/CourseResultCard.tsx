@@ -6,16 +6,14 @@ import { formatWon } from "../../utils/format";
 export default function CourseResultCard({
   course,
   onClick,
+  onSave,
 }: {
   course: CourseSummary;
   onClick: () => void;
+  onSave?: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-lg border border-[#e7ebe8] bg-white p-4 text-left shadow-sm"
-    >
+    <article className="w-full rounded-lg border border-[#e7ebe8] bg-white p-4 text-left shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           {course.badge && (
@@ -25,9 +23,9 @@ export default function CourseResultCard({
           )}
           <h2 className="text-base font-extrabold">{course.title}</h2>
         </div>
-        <span className="text-[#a6afa9]">♡</span>
+        <button type="button" onClick={onSave} className="text-xl text-[#a6afa9]" aria-label="코스 저장">♡</button>
       </div>
-      <MetaRow course={course} />
+      <button type="button" onClick={onClick} className="w-full text-left"><MetaRow course={course} /></button>
       <div className="mt-3 grid grid-cols-4 gap-2">
         {course.images.map((image) => (
           <img
@@ -51,6 +49,6 @@ export default function CourseResultCard({
       <p className="mt-2 text-right text-xs font-bold text-[#16883b]">
         남은 예산 {formatWon(course.budget - course.cost)}원
       </p>
-    </button>
+    </article>
   );
 }

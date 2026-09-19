@@ -1,3 +1,5 @@
+import CourseMap from "../pages/map/CourseMap";
+import type { RecommendationDraftResponse } from "../types/recommendation";
 import { useMemo, useState } from "react";
 import { recommendedCourses } from "../data/mockCourses";
 import type { CourseSummary } from "../data/mockCourses";
@@ -12,12 +14,23 @@ import SavedScreen from "../pages/saved/SavedScreen";
 import ChatScreen from "../pages/chat/ChatScreen";
 import MyScreen from "../pages/my/MyScreen";
 import BottomNav from "../components/layout/BottomNav";
+import LoginScreen from "../pages/auth/LoginScreen";
+import { supabase } from "../lib/supabase";
+import { useEffect } from "react";
 
 export default function AppShell() {
+  const [showLogin, setShowLogin] = useState(false);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setShowLogin(!data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setShowLogin(!session));
+    return () => listener.subscription.unsubscribe();
+  }, []);
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedCourse, setSelectedCourse] = useState<CourseSummary>(
     recommendedCourses[0],
   );
+  const [mapCourse, setMapCourse] = useState<{ result: RecommendationDraftResponse; courseIndex: number } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<TourPlace | null>(null);
 
   const activeTab = useMemo<TabKey>(() => {
@@ -37,6 +50,8 @@ export default function AppShell() {
     setActiveScreen("detail");
   };
 
+  if (showLogin) return <LoginScreen onSkip={() => setShowLogin(false)} />;
+
   return (
     <main className="min-h-screen bg-[#f5f6f4] text-[#171c19]">
       <div className="mx-auto min-h-screen w-full max-w-[430px] bg-white shadow-sm">
@@ -49,7 +64,9 @@ export default function AppShell() {
             />
           )}
 
-          {activeScreen === "recommend" && <RecommendScreen />}
+                    <div hidden={activeScreen !== "recommend"}>
+            <RecommendScreen onOpenMap={(result, courseIndex) => { setMapCourse({ result, courseIndex }); setActiveScreen("map"); }} />
+          </div>
 
           {activeScreen === "results" && (
             <ResultsScreen
@@ -66,7 +83,10 @@ export default function AppShell() {
             />
           )}
 
-          {activeScreen === "map" && (
+                    {activeScreen === "map" && mapCourse && (
+            <CourseMap key={`${mapCourse.courseIndex}-${mapCourse.result.courses[mapCourse.courseIndex].title}`} result={mapCourse.result} courseIndex={mapCourse.courseIndex} onBack={() => setActiveScreen("recommend")} />
+          )}
+          {activeScreen === "map" && !mapCourse && (
             <MapScreen
               selectedPlace={selectedPlace}
               onSelectPlace={setSelectedPlace}

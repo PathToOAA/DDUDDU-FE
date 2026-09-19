@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import ScreenHeader from "../../components/common/ScreenHeader";
 import FormBlock from "../../components/common/FormBlock";
 import Segmented from "../../components/common/Segmented";
-import { generateRecommendationDrafts } from "../../api/recommendationApi";
 import CourseDraftResults from "./CourseDraftResults";
 import type {
   IncludedCost,
@@ -13,6 +12,7 @@ import type {
   TravelType,
   WalkingPreference,
 } from "../../types/recommendation";
+import useRecommendationJob from "./hooks/useRecommendationJob";
 
 const SUPPORTED_CANDIDATE_THEMES: TravelTheme[] = [
   "SEA",
@@ -41,13 +41,15 @@ const COST_OPTIONS: { value: IncludedCost; label: string }[] = [
   { value: "ACCOMMODATION", label: "숙박비 포함" },
 ];
 
-export default function RecommendScreen() {
-  const [isSearching, setIsSearching] = useState(false);
+export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: RecommendationDraftResponse, courseIndex: number) => void }) {
+  const { generate, isSearching, loadingMessage } = useRecommendationJob();
   const [searchError, setSearchError] = useState<string | null>(null);
   const [draftResult, setDraftResult] =
     useState<RecommendationDraftResponse | null>(null);
 
   const [regionCode, setRegionCode] = useState("");
+  const [departureHubCode, setDepartureHubCode] = useState("");
+  const [returnHubCode, setReturnHubCode] = useState("");
   const [regions, setRegions] = useState<
     RecommendationOptionsResponse["regions"]
   >([]);
@@ -117,6 +119,10 @@ export default function RecommendScreen() {
     return () => controller.abort();
   }, []);
 
+  const hubs = regions.find((region) => region.code === regionCode)?.hubs ?? [];
+  const departureCode = departureHubCode || hubs[0]?.code || "";
+  const returnCode = returnHubCode || departureCode;
+
   function toggleTheme(code: TravelTheme) {
     if (isSearching || !SUPPORTED_CANDIDATE_THEMES.includes(code)) {
       return;
@@ -158,6 +164,8 @@ export default function RecommendScreen() {
 
     const request: RecommendationRequest = {
       regionCode,
+      departureHubCode: departureCode,
+      returnHubCode: returnCode,
       themes: [...selectedThemes],
       travelType,
       startTime,
@@ -167,19 +175,19 @@ export default function RecommendScreen() {
       includedCosts: [...includedCosts],
     };
 
-    setIsSearching(true);
-
     try {
-      const result = await generateRecommendationDrafts(request);
+      const result = await generate(request);
       setDraftResult(result);
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
       setSearchError(
         error instanceof Error
           ? error.message
           : "코스를 생성하지 못했어요. 잠시 후 다시 시도해주세요.",
       );
-    } finally {
-      setIsSearching(false);
     }
   }
 
@@ -196,6 +204,8 @@ export default function RecommendScreen() {
           disabled={isLoading || isSearching || error !== null}
           onChange={(event) => {
             setRegionCode(event.target.value);
+            setDepartureHubCode("");
+            setReturnHubCode("");
             setDraftResult(null);
             setSearchError(null);
           }}
@@ -211,6 +221,25 @@ export default function RecommendScreen() {
             </option>
           ))}
         </select>
+      </FormBlock>
+
+      <FormBlock label="출발 · 복귀 지점">
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm">출발지
+            <select aria-label="출발지" value={departureCode} disabled={isLoading || isSearching} className="mt-2 w-full rounded-lg border bg-white p-3"
+              onChange={(event) => { setDepartureHubCode(event.target.value); setDraftResult(null); }}>
+              {hubs.map((hub) => <option key={hub.code} value={hub.code}>{hub.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm">복귀 지점
+            <select aria-label="복귀 지점" value={returnHubCode} disabled={isLoading || isSearching} className="mt-2 w-full rounded-lg border bg-white p-3"
+              onChange={(event) => { setReturnHubCode(event.target.value); setDraftResult(null); }}>
+              <option value="">출발지와 동일</option>
+              {hubs.map((hub) => <option key={hub.code} value={hub.code}>{hub.name}</option>)}
+            </select>
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-gray-600">첫날 출발과 마지막 날 복귀에 적용해요. 숙소 이동은 포함하지 않아요.</p>
       </FormBlock>
 
       <FormBlock label="여행 기간">
@@ -275,7 +304,7 @@ export default function RecommendScreen() {
         </div>
 
         <p className="mt-2 text-xs text-[#68736c]">
-          여러 날 여행하면 매일 같은 관광 시간대를 적용해요.
+          코스 구성 시 참고하는 시간이에요. 장소별 체류 시간과 귀환 시각을 확정하지 않아요.
         </p>
       </FormBlock>
 
@@ -398,10 +427,10 @@ export default function RecommendScreen() {
         className="mt-6 w-full rounded-lg bg-[#16883b] py-4 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSearching
-          ? "여행 코스를 만들고 있어요…"
+          ? loadingMessage
           : searchError
             ? "여행 코스 다시 만들기"
-            : "여행 코스 만들기"}{" "}
+            : "여행 코스 만들기"}
       </button>
 
       {isSearching && (
@@ -414,9 +443,7 @@ export default function RecommendScreen() {
             className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#b9ddc3] border-t-[#16883b]"
           />
 
-          <p className="mt-3 font-bold text-[#16883b]">
-            여행 코스를 만들고 있어요
-          </p>
+          <p className="mt-3 font-bold text-[#16883b]">{loadingMessage}</p>
 
           <p className="mt-2 text-sm leading-6 text-gray-600">
             관광지 후보 조회와 AI 코스 생성을 진행해요.
@@ -436,7 +463,7 @@ export default function RecommendScreen() {
       )}
 
       {draftResult && !isSearching && (
-        <CourseDraftResults result={draftResult} />
+        <CourseDraftResults result={draftResult} onOpenMap={(index) => onOpenMap(draftResult, index)} />
       )}
     </section>
   );

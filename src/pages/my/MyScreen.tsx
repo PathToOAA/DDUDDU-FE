@@ -1,4 +1,40 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../../lib/supabase";
+
+type Profile = { nickname: string | null; avatar_url: string | null };
+
 export default function MyScreen() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+    let mounted = true;
+    client.auth.getUser().then(async ({ data }) => {
+      if (!data.user || !mounted) return;
+      const { data: row } = await client
+        .from("profiles")
+        .select("nickname, avatar_url")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (mounted) {
+        setProfile(row ?? {
+          nickname: data.user.user_metadata?.name ?? data.user.user_metadata?.nickname ?? null,
+          avatar_url: data.user.user_metadata?.avatar_url ?? data.user.user_metadata?.picture ?? null,
+        });
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const handleLogout = async () => {
+    if (!supabase) return;
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+  };
+
+  const nickname = profile?.nickname ?? "뚜벅님";
   return (
     <section className="min-h-screen bg-[#f7f8f6]">
       <div className="bg-[#35a554] px-5 pb-10 pt-7 text-white">
@@ -6,11 +42,13 @@ export default function MyScreen() {
           <button className="h-9 w-9 rounded-full text-xl">⚙</button>
         </div>
         <div className="flex items-center gap-4">
-          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl">
-            ☺
-          </span>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="프로필" className="h-20 w-20 rounded-full bg-white object-cover" />
+          ) : (
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl">☺</span>
+          )}
           <p className="font-bold">
-            뚜벅님, 안녕하세요!
+            {nickname}님, 안녕하세요!
             <br />
             즐거운 뚜벅이 여행 되세요
           </p>
@@ -49,9 +87,11 @@ export default function MyScreen() {
             <button
               key={item}
               className="flex w-full items-center justify-between border-b border-[#edf0ed] px-4 py-4 text-sm last:border-b-0"
+            onClick={item === "로그아웃" ? handleLogout : undefined}
+            disabled={item === "로그아웃" && isLoggingOut}
             >
               <span>{item}</span>
-              <span className="text-[#8a958d]">›</span>
+              <span className="text-[#8a958d]">{item === "로그아웃" && isLoggingOut ? "처리 중..." : "›"}</span>
             </button>
           ))}
         </div>
