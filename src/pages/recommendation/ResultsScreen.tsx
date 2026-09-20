@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { recommendedCourses } from "../../data/mockCourses";
 import type { CourseSummary } from "../../data/mockCourses";
 import ScreenHeader from "../../components/common/ScreenHeader";
@@ -18,7 +19,7 @@ export default function ResultsScreen({
       <div className="px-5">
         <ScreenHeader
           title="추천 코스 결과"
-          left="‹"
+          left={<ArrowLeft size={22} aria-hidden="true" />} leftLabel="뒤로가기"
           right="필터"
           onLeft={onBack}
         />
@@ -37,7 +38,7 @@ export default function ResultsScreen({
         {recommendedCourses.map((course) => (
           <CourseResultCard
             key={course.id}
-            course={course}
+            course={course} saved={savedIds.includes(course.id)}
             onClick={() => onOpenCourse(course)}
             onSave={async () => {
               await saveCourse(course);

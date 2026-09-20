@@ -20,6 +20,7 @@ export default function SavedScreen({
     <section className="px-5 pt-6">
       <ScreenHeader title="저장한 코스" />
       <div className="mt-6 space-y-3">
+        {courses.some(c => !c.detail) && <p className="text-xs text-gray-500">이전에 저장한 코스에는 경로 정보가 없어요. 새 추천 코스를 저장하면 지도와 이동 정보도 함께 보관돼요.</p>}
         {courses.map((course) => (
           <CompactCourseCard
             key={course.id}

@@ -1,100 +1,115 @@
+import { ChevronRight, Heart, LogIn, LogOut, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 type Profile = { nickname: string | null; avatar_url: string | null };
 
-export default function MyScreen() {
+export default function MyScreen({ onOpenSaved, onLogin }: {
+  onOpenSaved: () => void;
+  onLogin: () => void;
+}) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
-    const client = supabase;
     let mounted = true;
-    client.auth.getUser().then(async ({ data }) => {
-      if (!data.user || !mounted) return;
-      const { data: row } = await client
-        .from("profiles")
-        .select("nickname, avatar_url")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      if (mounted) {
-        setProfile(row ?? {
-          nickname: data.user.user_metadata?.name ?? data.user.user_metadata?.nickname ?? null,
-          avatar_url: data.user.user_metadata?.avatar_url ?? data.user.user_metadata?.picture ?? null,
-        });
+    async function loadProfile() {
+      try {
+        if (!supabase) return;
+        const { data, error: authError } = await supabase.auth.getUser();
+        if (!mounted) return;
+        if (!data.user) {
+          if (authError && authError.name !== "AuthSessionMissingError") {
+            setError("로그인 정보를 확인하지 못했어요. 다시 시도해주세요.");
+          }
+          return;
+        }
+        setIsSignedIn(true);
+        const metadata = data.user.user_metadata;
+        const fallback = {
+          nickname: metadata?.name ?? metadata?.nickname ?? null,
+          avatar_url: metadata?.avatar_url ?? metadata?.picture ?? null,
+        };
+        setProfile(fallback);
+        const { data: row, error: profileError } = await supabase
+          .from("profiles")
+          .select("nickname, avatar_url")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        if (!mounted) return;
+        if (profileError) {
+          setError("프로필을 불러오지 못해 로그인 정보를 표시하고 있어요.");
+        } else {
+          setProfile({
+            nickname: row?.nickname ?? fallback.nickname,
+            avatar_url: row?.avatar_url ?? fallback.avatar_url,
+          });
+        }
+      } catch {
+        if (mounted) setError("프로필을 불러오지 못했어요. 다시 시도해주세요.");
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-    });
+    }
+    void loadProfile();
     return () => { mounted = false; };
   }, []);
 
-  const handleLogout = async () => {
+  async function handleLogout() {
     if (!supabase) return;
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
-  };
+    setError(null);
+    try {
+      const { error: logoutError } = await supabase.auth.signOut();
+      if (logoutError) throw logoutError;
+    } catch {
+      setError("로그아웃하지 못했어요. 다시 시도해주세요.");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
 
-  const nickname = profile?.nickname ?? "뚜벅님";
   return (
     <section className="min-h-screen bg-[#f7f8f6]">
       <div className="bg-[#35a554] px-5 pb-10 pt-7 text-white">
-        <div className="mb-8 flex justify-end">
-          <button className="h-9 w-9 rounded-full text-xl">⚙</button>
-        </div>
+        <h1 className="mb-7 text-xl font-extrabold">마이</h1>
         <div className="flex items-center gap-4">
           {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="프로필" className="h-20 w-20 rounded-full bg-white object-cover" />
+            <img src={profile.avatar_url} alt="내 프로필" className="h-20 w-20 rounded-full bg-white object-cover" />
           ) : (
-            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-4xl">☺</span>
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white text-[#16883b]">
+              <UserRound size={36} aria-hidden="true" />
+            </span>
           )}
-          <p className="font-bold">
-            {nickname}님, 안녕하세요!
-            <br />
-            즐거운 뚜벅이 여행 되세요
-          </p>
+          <div aria-live="polite">
+            <p className="font-bold">
+              {isLoading ? "프로필을 불러오는 중이에요" : isSignedIn ? (profile?.nickname || "여행자") + "님, 안녕하세요!" : "로그인하고 여행을 저장해보세요"}
+            </p>
+            <p className="mt-2 text-sm text-white/85">나만의 여행 코스를 모아보세요.</p>
+          </div>
         </div>
       </div>
-
-      <div className="-mt-5 px-5">
-        <div className="grid grid-cols-3 rounded-lg bg-white py-5 text-center shadow-sm">
-          {["저장한 코스\n12", "다녀온 코스\n5", "찜한 장소\n28"].map(
-            (item) => (
-              <div
-                key={item}
-                className="whitespace-pre-line border-r border-[#e7ebe8] last:border-r-0"
-              >
-                <span className="text-xs text-[#68736c]">
-                  {item.split("\n")[0]}
-                </span>
-                <strong className="mt-2 block text-xl">
-                  {item.split("\n")[1]}
-                </strong>
-              </div>
-            ),
-          )}
-        </div>
-
-        <div className="mt-6 rounded-lg bg-white">
-          {[
-            "내 코스 관리",
-            "예약/결제 내역",
-            "리뷰 관리",
-            "관심 지역 설정",
-            "알림 설정",
-            "고객센터",
-            "로그아웃",
-          ].map((item) => (
-            <button
-              key={item}
-              className="flex w-full items-center justify-between border-b border-[#edf0ed] px-4 py-4 text-sm last:border-b-0"
-            onClick={item === "로그아웃" ? handleLogout : undefined}
-            disabled={item === "로그아웃" && isLoggingOut}
-            >
-              <span>{item}</span>
-              <span className="text-[#8a958d]">{item === "로그아웃" && isLoggingOut ? "처리 중..." : "›"}</span>
+      <div className="px-5 py-6">
+        {!isLoading && (
+          <div className="overflow-hidden rounded-xl border border-[#e7ebe8] bg-white">
+            {isSignedIn && (
+              <button type="button" onClick={onOpenSaved} className="flex w-full items-center gap-3 border-b border-[#edf0ed] p-4 text-sm font-semibold">
+                <Heart size={20} className="text-[#16883b]" aria-hidden="true" />
+                저장한 코스
+                <ChevronRight size={18} className="ml-auto text-[#8a958d]" aria-hidden="true" />
+              </button>
+            )}
+            <button type="button" onClick={isSignedIn ? handleLogout : onLogin} disabled={isLoggingOut}
+              className="flex w-full items-center gap-3 p-4 text-sm font-semibold disabled:opacity-60">
+              {isSignedIn ? <LogOut size={20} aria-hidden="true" /> : <LogIn size={20} aria-hidden="true" />}
+              {isLoggingOut ? "로그아웃 중..." : isSignedIn ? "로그아웃" : "카카오로 로그인"}
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+        {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
       </div>
     </section>
   );

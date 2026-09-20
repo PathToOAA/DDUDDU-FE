@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { CourseRouteAnalysis, PlaceCandidateResponse } from "../../types/recommendation";
 
 const minutes = (seconds: number) => `${Math.ceil(seconds / 60)}분`;
@@ -16,7 +17,7 @@ export default function CourseRouteDetails({ analysis, places }: {
   const names = new Map(places.map((p) => [p.contentId, p.title]));
   return (
     <div className="mt-4 rounded-xl bg-[#f0f7f2] p-3 text-sm">
-      <p className="font-bold">자동 선택한 이동 경로</p>
+      <p className="font-bold">추천 이동 경로</p>
       {analysis.complete ? (
         <p className="mt-2">
           출발·복귀 포함 이동 {minutes(analysis.durationSeconds ?? 0)} · 도보 {distance(analysis.walkDistanceMeters ?? 0)}
@@ -30,17 +31,17 @@ export default function CourseRouteDetails({ analysis, places }: {
         {analysis.transfers.map((transfer, index) => {
           const route = transfer.route;
           return <li key={index} className="rounded-lg bg-white p-3">
-            <p className="text-xs text-gray-600">{transfer.day}일차 · {names.get(transfer.fromContentId)} → {names.get(transfer.toContentId)}</p>
+            <p className="text-xs text-gray-600">{transfer.day}일차 · {names.get(transfer.fromContentId)} <ArrowRight size={12} className="inline-block align-middle" aria-label="다음" /> {names.get(transfer.toContentId)}</p>
             <p className="mt-1 font-semibold">
-              {route.status === "FOUND" ? `${route.mode === "WALK" ? "도보" : "대중교통"} · ${minutes(route.durationSeconds ?? 0)}` : route.status === "DIFFICULT" ? "이동 어려움" : "조회 실패"}
+              {route.status === "FOUND" ? `${route.mode === "WALK" ? "도보" : "대중교통"} · ${minutes(route.durationSeconds ?? 0)}` : route.status === "DIFFICULT" ? "이동 어려움" : route.status === "PENDING" ? "대중교통 조회 대기" : "조회 실패"}
             </p>
             {route.status === "FOUND" && <p className="mt-1 text-xs">
               도보 {distance(route.walkDistanceMeters ?? 0)} · {route.fare == null ? "요금 미확인" : `${route.fare.toLocaleString("ko-KR")} ${route.currency === "KRW" ? "원" : route.currency ?? "(통화 미확인)"}`}
             </p>}
-            <p className="mt-1 text-xs text-gray-600">{route.message}</p>
+            {route.status !== "FOUND" && <p className="mt-1 text-xs text-gray-600">{route.message}</p>}
             {route.legs.length > 0 && <ul className="mt-2 space-y-1 text-xs">
               {route.legs.map((leg, legIndex) => <li key={legIndex}>
-                {modeLabels[leg.mode] ?? leg.mode}{leg.routeName ? ` ${leg.routeName}` : ""} · {leg.startName ?? "출발"} → {leg.endName ?? "도착"} ({minutes(leg.durationSeconds)})
+                {modeLabels[leg.mode] ?? leg.mode}{leg.routeName ? ` ${leg.routeName}` : ""} · {leg.startName ?? "출발"} <ArrowRight size={12} className="inline-block align-middle" aria-label="다음" /> {leg.endName ?? "도착"} ({minutes(leg.durationSeconds)})
               </li>)}
             </ul>}
           </li>;

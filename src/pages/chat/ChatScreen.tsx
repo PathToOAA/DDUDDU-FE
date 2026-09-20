@@ -1,3 +1,4 @@
+import { MessageCircle, X, Send } from "lucide-react";
 import { recommendedCourses } from "../../data/mockCourses";
 import Bubble from "../../components/chat/Bubble";
 
@@ -13,15 +14,15 @@ export default function ChatScreen({
       <header className="flex items-center justify-between border-b border-[#e7ebe8] pb-4">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#16883b] text-white">
-            ··
+            <MessageCircle size={22} aria-hidden="true" />
           </span>
           <div>
             <h1 className="text-base font-extrabold">뚜벅이 여행 챗봇</h1>
             <p className="text-xs text-[#68736c]">무엇을 도와드릴까요?</p>
           </div>
         </div>
-        <button onClick={onClose} className="h-9 w-9 rounded-full text-2xl">
-          ×
+        <button onClick={onClose} aria-label="챗봇 닫기" className="flex h-9 w-9 items-center justify-center rounded-full">
+          <X size={22} aria-hidden="true" />
         </button>
       </header>
 
@@ -76,8 +77,8 @@ export default function ChatScreen({
             className="min-w-0 flex-1 text-sm outline-none"
             placeholder="메시지를 입력하세요..."
           />
-          <button className="h-9 w-9 rounded-full bg-[#16883b] text-white">
-            ↗
+          <button aria-label="메시지 보내기" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#16883b] text-white">
+            <Send size={18} aria-hidden="true" />
           </button>
         </div>
       </div>

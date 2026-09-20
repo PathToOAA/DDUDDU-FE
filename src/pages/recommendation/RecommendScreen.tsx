@@ -1,3 +1,4 @@
+import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import ScreenHeader from "../../components/common/ScreenHeader";
 import FormBlock from "../../components/common/FormBlock";
@@ -194,7 +195,7 @@ export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: Rec
 
   return (
     <section className="px-5 pt-6">
-      <ScreenHeader title="여행 조건을 선택해주세요" right="↻" />
+      <ScreenHeader title="여행 조건을 선택해주세요" right={<RotateCcw size={20} aria-hidden="true" />} rightLabel="초기화" />
 
       <FormBlock label="여행 지역">
         <p className="mb-2 text-sm text-gray-500">강원특별자치도</p>
@@ -352,7 +353,7 @@ export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: Rec
         </div>
       </FormBlock>
 
-      <FormBlock label="예산 설정">
+      <FormBlock label="여행 예산 · 준비 중"><fieldset disabled aria-label="여행 예산 준비 중" className="opacity-40">
         <div className="text-left">
           <p className="mb-1 text-2xl font-extrabold">
             {budget.toLocaleString("ko-KR")}원
@@ -413,7 +414,7 @@ export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: Rec
             })}
           </div>
         </div>
-      </FormBlock>
+      </fieldset></FormBlock>
 
       <button
         type="button"
@@ -464,7 +465,7 @@ export default function RecommendScreen({ onOpenMap }: { onOpenMap: (result: Rec
       )}
 
       {draftResult && !isSearching && (
-        <CourseDraftResults result={draftResult} onOpenMap={(index) => onOpenMap(draftResult, index)} />
+        <CourseDraftResults result={draftResult} onUpdateResult={setDraftResult} onOpenMap={(index) => onOpenMap(draftResult, index)} />
       )}
     </section>
   );

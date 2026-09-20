@@ -1,3 +1,4 @@
+import type { RecommendationDraftResponse } from "../types/recommendation";
 export type CourseStop = {
   name: string;
   time: string;
@@ -6,6 +7,7 @@ export type CourseStop = {
 };
 
 export type CourseSummary = {
+  detail?: { result: RecommendationDraftResponse; courseIndex: number };
   id: number;
   title: string;
   badge?: string;
@@ -31,10 +33,10 @@ export const recommendedCourses: CourseSummary[] = [
     cost: 63500,
     budget: 70000,
     images: [
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80",
+      "",
+      "",
+      "",
+      "",
     ],
     stops: [
       {
@@ -79,10 +81,10 @@ export const recommendedCourses: CourseSummary[] = [
     cost: 98200,
     budget: 100000,
     images: [
-      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1591017403286-fd8493524e1e?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=400&q=80",
+      "",
+      "",
+      "",
+      "",
     ],
     stops: [
       {
@@ -115,10 +117,10 @@ export const recommendedCourses: CourseSummary[] = [
     cost: 61000,
     budget: 70000,
     images: [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1471922694854-ff1b63b20054?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80",
-      "https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=400&q=80",
+      "",
+      "",
+      "",
+      "",
     ],
     stops: [
       {
@@ -148,24 +150,24 @@ export const cities = [
     name: "강릉",
     description: "바다와 커피의 도시",
     image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80",
+      "",
   },
   {
     name: "춘천",
     description: "호수와 낭만의 도시",
     image:
-      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=300&q=80",
+      "",
   },
   {
     name: "속초",
     description: "자연과 맛의 도시",
     image:
-      "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=300&q=80",
+      "",
   },
   {
     name: "원주",
     description: "역사와 문화의 도시",
     image:
-      "https://images.unsplash.com/photo-1591017403286-fd8493524e1e?auto=format&fit=crop&w=300&q=80",
+      "",
   },
 ];

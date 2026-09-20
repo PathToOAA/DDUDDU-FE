@@ -1,3 +1,4 @@
+import TourPhoto from "../../components/tour/TourPhoto";
 import type { CourseSummary } from "../../data/mockCourses";
 import { formatWon } from "../../utils/format";
 
@@ -21,14 +22,14 @@ export default function CompactCourseCard({
         </p>
         <p className="mt-1 text-xs text-[#3c4740]">버스 {course.busCount}</p>
         <p className="mt-1 text-xs text-[#3c4740]">
-          예상 {formatWon(course.cost)}원
+          {course.detail ? (course.detail.result.routeAnalysis[0]?.transportFareKrw == null ? "교통비 미확인" : `교통비 ${formatWon(course.cost)}원`) : `예상 ${formatWon(course.cost)}원`}
         </p>
       </div>
-      <img
+      {course.images[0] && <TourPhoto
         src={course.images[0]}
         alt=""
         className="h-20 w-20 rounded-lg object-cover"
-      />
+      />}
     </button>
   );
 }

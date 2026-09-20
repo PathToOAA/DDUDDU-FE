@@ -1,3 +1,5 @@
+import TourPhoto from "../../components/tour/TourPhoto";
+import { ArrowLeft } from "lucide-react";
 import type { CourseSummary } from "../../data/mockCourses";
 import MetaRow from "../../components/course/MetaRow";
 import ProgressBar from "../../components/common/ProgressBar";
@@ -15,7 +17,7 @@ export default function DetailScreen({
   return (
     <section>
       <div className="relative h-52 text-white">
-        <img
+        <TourPhoto
           src={course.images[0]}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
@@ -24,9 +26,9 @@ export default function DetailScreen({
         <button
           type="button"
           onClick={onBack}
-          className="absolute left-4 top-5 h-9 w-9 rounded-full bg-white/20 text-2xl"
+          aria-label="뒤로가기" className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-black/30"
         >
-          ‹
+          <ArrowLeft size={22} aria-hidden="true" />
         </button>
         <div className="absolute bottom-5 left-5 right-5">
           <div className="mb-2 inline-flex rounded-full bg-[#16883b] px-3 py-1 text-xs font-bold">
@@ -49,22 +51,6 @@ export default function DetailScreen({
             </p>
           </div>
           <ProgressBar value={(course.cost / course.budget) * 100} />
-        </div>
-
-        <div className="mt-5 grid grid-cols-4 gap-2">
-          {[
-            "교통\n24,000원",
-            "식비\n31,000원",
-            "카페/간식\n8,500원",
-            "관광/입장\n10,000원",
-          ].map((item) => (
-            <div
-              key={item}
-              className="whitespace-pre-line rounded-lg border border-[#e7ebe8] py-3 text-center text-xs leading-5"
-            >
-              {item}
-            </div>
-          ))}
         </div>
 
         <h2 className="mt-8 text-lg font-extrabold">코스 일정</h2>

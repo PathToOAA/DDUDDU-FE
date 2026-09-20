@@ -74,6 +74,7 @@ export type CourseDraft = {
 };
 
 export type RecommendationDraftResponse = {
+  source?: "TOUR_API";
   conditions: RecommendationRequest;
   courses: CourseDraft[];
   places: PlaceCandidateResponse["places"];
@@ -99,7 +100,7 @@ export type RecommendationJobResponse = {
 };
 
 export type RouteSelection = {
-  status: "FOUND" | "DIFFICULT" | "ERROR";
+  status: "FOUND" | "DIFFICULT" | "ERROR" | "PENDING";
   mode: "WALK" | "TRANSIT" | null;
   message: string;
   durationSeconds: number | null;

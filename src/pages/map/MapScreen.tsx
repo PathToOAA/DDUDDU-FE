@@ -1,3 +1,4 @@
+import { ArrowLeft, ChevronUp } from "lucide-react";
 import TourMap from "../../components/TourMap";
 import { recommendedCourses } from "../../data/mockCourses";
 import type { TourPlace } from "../../types/tour";
@@ -15,10 +16,10 @@ export default function MapScreen({
     <section className="relative min-h-screen bg-[#edf2ed]">
       <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between">
         <button
-          className="h-10 w-10 rounded-full bg-white shadow"
+          aria-label="추천 결과로 돌아가기" className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow"
           onClick={onBackToResults}
         >
-          ‹
+          <ArrowLeft size={22} aria-hidden="true" />
         </button>
         <button className="rounded-lg bg-white px-4 py-2 text-sm font-bold shadow">
           목록보기
@@ -33,7 +34,7 @@ export default function MapScreen({
               총 7시간 / 도보 4.1km / 버스 3회
             </p>
           </div>
-          <span className="text-[#8a958d]">⌃</span>
+          <ChevronUp size={20} className="text-[#8a958d]" aria-hidden="true" />
         </div>
         <div className="mt-4 space-y-3">
           {recommendedCourses[0].stops.slice(0, 4).map((stop, index) => (

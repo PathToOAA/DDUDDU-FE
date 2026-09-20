@@ -1,2 +1,2 @@
-export type TabKey = "home" | "recommend" | "map" | "saved" | "my";
-export type ScreenKey = TabKey | "results" | "detail" | "chat";
+export type TabKey = "home" | "recommend" | "saved" | "my";
+export type ScreenKey = TabKey | "map" | "results" | "detail" | "chat";

@@ -1,3 +1,4 @@
+import { MessageCircle } from "lucide-react";
 import CourseMap from "../pages/map/CourseMap";
 import type { RecommendationDraftResponse } from "../types/recommendation";
 import { useMemo, useState } from "react";
@@ -30,11 +31,13 @@ export default function AppShell() {
   const [selectedCourse, setSelectedCourse] = useState<CourseSummary>(
     recommendedCourses[0],
   );
+  const [mapReturn, setMapReturn] = useState<"saved" | "recommend" | "home">("recommend");
   const [mapCourse, setMapCourse] = useState<{ result: RecommendationDraftResponse; courseIndex: number } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<TourPlace | null>(null);
 
   const activeTab = useMemo<TabKey>(() => {
-    if (activeScreen === "results" || activeScreen === "detail") {
+    if (activeScreen === "map" && mapReturn !== "recommend") return mapReturn;
+    if (activeScreen === "results" || activeScreen === "detail" || activeScreen === "map") {
       return "recommend";
     }
 
@@ -43,9 +46,11 @@ export default function AppShell() {
     }
 
     return activeScreen;
-  }, [activeScreen]);
+  }, [activeScreen, mapReturn]);
 
   const openCourse = (course: CourseSummary) => {
+    if (course.detail) { setMapCourse(course.detail); setMapReturn(activeScreen === "saved" ? "saved" : "home"); setActiveScreen("map"); return; }
+    setMapCourse(null);
     setSelectedCourse(course);
     setActiveScreen("detail");
   };
@@ -65,7 +70,7 @@ export default function AppShell() {
           )}
 
                     <div hidden={activeScreen !== "recommend"}>
-            <RecommendScreen onOpenMap={(result, courseIndex) => { setMapCourse({ result, courseIndex }); setActiveScreen("map"); }} />
+            <RecommendScreen onOpenMap={(result, courseIndex) => { setMapReturn("recommend"); setMapCourse({ result, courseIndex }); setActiveScreen("map"); }} />
           </div>
 
           {activeScreen === "results" && (
@@ -84,7 +89,7 @@ export default function AppShell() {
           )}
 
                     {activeScreen === "map" && mapCourse && (
-            <CourseMap key={`${mapCourse.courseIndex}-${mapCourse.result.courses[mapCourse.courseIndex].title}`} result={mapCourse.result} courseIndex={mapCourse.courseIndex} onBack={() => setActiveScreen("recommend")} />
+            <CourseMap key={`${mapCourse.courseIndex}-${mapCourse.result.courses[mapCourse.courseIndex].title}`} result={mapCourse.result} courseIndex={mapCourse.courseIndex} onBack={() => setActiveScreen(mapReturn)} initiallySaved={mapReturn === "saved"} />
           )}
           {activeScreen === "map" && !mapCourse && (
             <MapScreen
@@ -98,7 +103,7 @@ export default function AppShell() {
             <SavedScreen onOpenCourse={openCourse} />
           )}
 
-          {activeScreen === "my" && <MyScreen />}
+          {activeScreen === "my" && <MyScreen onOpenSaved={() => setActiveScreen("saved")} onLogin={() => setShowLogin(true)} />}
 
           {activeScreen === "chat" && (
             <ChatScreen
@@ -115,10 +120,10 @@ export default function AppShell() {
         <button
           type="button"
           onClick={() => setActiveScreen("chat")}
-          className="fixed bottom-24 left-1/2 z-20 h-12 w-12 translate-x-[150px] rounded-full bg-[#16883b] text-xl text-white shadow-lg"
+          className="fixed bottom-24 left-1/2 z-20 flex h-12 w-12 items-center justify-center translate-x-[150px] rounded-full bg-[#16883b] text-xl text-white shadow-lg"
           aria-label="챗봇 열기"
         >
-          ··
+          <MessageCircle size={24} aria-hidden="true" />
         </button>
       )}
     </main>

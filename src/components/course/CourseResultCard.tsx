@@ -1,3 +1,5 @@
+import TourPhoto from "../../components/tour/TourPhoto";
+import { Heart } from "lucide-react";
 import type { CourseSummary } from "../../data/mockCourses";
 import MetaRow from "./MetaRow";
 import ProgressBar from "../common/ProgressBar";
@@ -7,10 +9,12 @@ export default function CourseResultCard({
   course,
   onClick,
   onSave,
+  saved = false,
 }: {
   course: CourseSummary;
   onClick: () => void;
   onSave?: () => void;
+  saved?: boolean;
 }) {
   return (
     <article className="w-full rounded-lg border border-[#e7ebe8] bg-white p-4 text-left shadow-sm">
@@ -23,12 +27,12 @@ export default function CourseResultCard({
           )}
           <h2 className="text-base font-extrabold">{course.title}</h2>
         </div>
-        <button type="button" onClick={onSave} className="text-xl text-[#a6afa9]" aria-label="코스 저장">♡</button>
+        <button type="button" onClick={onSave} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#16883b]" aria-label={saved ? "저장된 코스" : "코스 저장"} aria-pressed={saved}><Heart size={22} fill={saved ? "currentColor" : "none"} aria-hidden="true" /></button>
       </div>
       <button type="button" onClick={onClick} className="w-full text-left"><MetaRow course={course} /></button>
       <div className="mt-3 grid grid-cols-4 gap-2">
         {course.images.map((image) => (
-          <img
+          <TourPhoto
             key={image}
             src={image}
             alt=""
