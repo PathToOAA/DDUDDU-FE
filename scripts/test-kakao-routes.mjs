@@ -1,0 +1,27 @@
+import fs from 'node:fs';
+import ts from 'typescript';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync('src/api/kakaoRouteApi.ts','utf8').replace('import { apiUrl } from "./apiUrl";','const apiUrl = path => path;');
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {resolveCourseTransit}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const route={status:'FOUND',mode:'TRANSIT',durationSeconds:1466,distanceMeters:6318,walkDistanceMeters:478,fare:1530,currency:'KRW',legs:[{mode:'BUS',routeName:'202-1 / 202-2'}],paths:[{mode:'BUS',points:[{latitude:37.76,longitude:128.89},{latitude:37.79,longitude:128.91}]}]};
+const pending={status:'PENDING'};
+const result={conditions:{walkingPreference:'MEDIUM'},places:[{contentId:'a',title:'강릉역',latitude:37.76,longitude:128.89},{contentId:'b',title:'강문해변',latitude:37.79,longitude:128.91}],routeAnalysis:[{courseIndex:0,transfers:[{fromContentId:'a',toContentId:'b',route:pending},{fromContentId:'a',toContentId:'b',route:pending}]}]};
+let calls=0, progress;
+globalThis.fetch=async(url,options)=>{
+  calls++;
+  assert.equal(url,'/api/routes/select');
+  const body=JSON.parse(options.body);
+  assert.equal(body.points.startLongitude,128.89);
+  assert.equal(body.preference,'MEDIUM');
+  assert.ok(!options.body.includes('apiKey'));
+  return {ok:true,json:async()=>route};
+};
+await resolveCourseTransit(result,0,new AbortController().signal,a=>{progress=a;});
+assert.equal(calls,1);
+assert.equal(progress.complete,true);
+assert.equal(progress.walkDistanceMeters,956);
+assert.deepEqual(progress.transfers[0].route.paths,route.paths);
+globalThis.fetch=async()=>({ok:true,json:async()=>({status:'ERROR',message:'카카오맵 사용 설정 확인',legs:[],paths:[]})});
+await assert.rejects(resolveCourseTransit(result,0,new AbortController().signal,()=>{}),/사용 설정/);
+console.log('Kakao backend request, coordinate mapping, pair reuse, geometry and error checks passed');

@@ -1,6 +1,7 @@
 import type { RecommendationDraftResponse } from "../types/recommendation";
 import type { CourseSummary } from "../data/mockCourses";
-import { resolveCourseTransit } from "./odsayApi";
+import { resolveCourseTransit } from "./kakaoRouteApi";
+const partials = new WeakMap<RecommendationDraftResponse, Map<number, RecommendationDraftResponse>>();
 const requests = new WeakMap<RecommendationDraftResponse, Map<number, Promise<RecommendationDraftResponse>>>();
 export function loadCourseDetail(result: RecommendationDraftResponse, index: number) {
   let entries = requests.get(result);
@@ -8,11 +9,14 @@ export function loadCourseDetail(result: RecommendationDraftResponse, index: num
   const existing = entries.get(index);
   if (existing) return existing;
   const promise = (async () => {
-    let current = result;
-    if (result.routeAnalysis.find(a => a.courseIndex === index)?.transfers.some(t => t.route.status === "PENDING")) {
-      await resolveCourseTransit(result, index, new AbortController().signal, analysis => {
+    let current = partials.get(result)?.get(index) ?? result;
+    if (current.routeAnalysis.find(a => a.courseIndex === index)?.transfers.some(t => t.route.status === "PENDING" || t.route.status === "ERROR")) {
+      await resolveCourseTransit(current, index, new AbortController().signal, analysis => {
         current = { ...current, routeAnalysis: current.routeAnalysis.map(a => a.courseIndex === index ? analysis : a) };
-      }, true);
+        let progress = partials.get(result);
+        if (!progress) { progress = new Map(); partials.set(result, progress); }
+        progress.set(index, current);
+      });
     }
     return current;
   })();

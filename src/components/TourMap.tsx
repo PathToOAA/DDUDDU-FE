@@ -1,64 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchGangneungTourPlaces } from "../api/tourApi";
 import type { TourPlace } from "../types/tour";
-
-type TourMapProps = {
-  onSelectPlace: (place: TourPlace) => void;
-};
-
-function TourMap({ onSelectPlace }: TourMapProps) {
+import KakaoMap from "./KakaoMap";
+import type { RoutePath } from "../types/recommendation";
+const paths: RoutePath[] = [];
+export default function TourMap({onSelectPlace}: {onSelectPlace: (place: TourPlace) => void}) {
+  const [items,setItems] = useState<TourPlace[]>([]);
+  const [error,setError] = useState("");
   useEffect(() => {
-    const container = document.getElementById("map_div");
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    const map = new Tmapv2.Map("map_div", {
-      center: new Tmapv2.LatLng(37.78, 128.92),
-      width: "100%",
-      height: "700px",
-      zoom: 13,
-      zoomControl: true,
-      scrollwheel: true,
-    });
-
-    const renderTourPlaceMarkers = async () => {
-      try {
-        const items = await fetchGangneungTourPlaces();
-
-        console.log("관광지 목록:", items);
-
-        items.forEach((item) => {
-          if (!item.mapx || !item.mapy) return;
-
-          const lat = Number(item.mapy);
-          const lng = Number(item.mapx);
-
-          if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-
-          const marker = new Tmapv2.Marker({
-            position: new Tmapv2.LatLng(lat, lng),
-            map,
-            title: item.title,
-          });
-
-          marker.addListener("click", () => {
-            console.log("선택한 관광지:", item);
-
-            onSelectPlace(item);
-            map.setCenter(new Tmapv2.LatLng(lat, lng));
-          });
-        });
-      } catch (error) {
-        console.error("관광 API 호출 실패:", error);
-      }
-    };
-
-    renderTourPlaceMarkers();
-  }, [onSelectPlace]);
-
-  return <div id="map_div" className="overflow-hidden rounded-2xl shadow" />;
+    let active = true;
+    fetchGangneungTourPlaces().then(data => { if(active) setItems(data); })
+      .catch(() => { if(active) setError("관광지를 불러오지 못했어요."); });
+    return () => { active = false; };
+  },[]);
+  const places = useMemo(() => items.filter(p => p.mapx && p.mapy && p.contentid && p.title).map(p => ({
+    ...p, contentId: p.contentid!, title: p.title!, latitude:Number(p.mapy), longitude:Number(p.mapx),
+  })),[items]);
+  return error ? <p role="alert">{error}</p> : places.length ? <KakaoMap places={places} paths={paths} onSelectPlace={onSelectPlace} height={700}/> : <p role="status">지도를 준비하고 있어요…</p>;
 }
-
-export default TourMap;
