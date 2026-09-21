@@ -18,26 +18,59 @@ import BottomNav from "../components/layout/BottomNav";
 import LoginScreen from "../pages/auth/LoginScreen";
 import { supabase } from "../lib/supabase";
 import { useEffect } from "react";
+import OnboardingPage from "../pages/recommendation/onboarding/OnboardingPage";
 
 export default function AppShell() {
+  const [showRecommendOnboarding, setShowRecommendOnboarding] = useState(
+    () => localStorage.getItem("dduddu_recommend_onboarding") !== "completed",
+  );
+
+  const openRecommend = () => {
+    const completed =
+      localStorage.getItem("dduddu_recommend_onboarding") === "completed";
+
+    if (completed) {
+      setActiveScreen("recommend");
+      return;
+    }
+
+    setShowRecommendOnboarding(true);
+  };
+
+  const completeRecommendOnboarding = () => {
+    localStorage.setItem("dduddu_recommend_onboarding", "completed");
+    setShowRecommendOnboarding(false);
+  };
+
   const [showLogin, setShowLogin] = useState(false);
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => setShowLogin(!data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setShowLogin(!session));
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => setShowLogin(!session),
+    );
     return () => listener.subscription.unsubscribe();
   }, []);
   const [activeScreen, setActiveScreen] = useState<ScreenKey>("home");
   const [selectedCourse, setSelectedCourse] = useState<CourseSummary>(
     recommendedCourses[0],
   );
-  const [mapReturn, setMapReturn] = useState<"saved" | "recommend" | "home">("recommend");
-  const [mapCourse, setMapCourse] = useState<{ result: RecommendationDraftResponse; courseIndex: number } | null>(null);
+  const [mapReturn, setMapReturn] = useState<"saved" | "recommend" | "home">(
+    "recommend",
+  );
+  const [mapCourse, setMapCourse] = useState<{
+    result: RecommendationDraftResponse;
+    courseIndex: number;
+  } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<TourPlace | null>(null);
 
   const activeTab = useMemo<TabKey>(() => {
     if (activeScreen === "map" && mapReturn !== "recommend") return mapReturn;
-    if (activeScreen === "results" || activeScreen === "detail" || activeScreen === "map") {
+    if (
+      activeScreen === "results" ||
+      activeScreen === "detail" ||
+      activeScreen === "map"
+    ) {
       return "recommend";
     }
 
@@ -49,11 +82,25 @@ export default function AppShell() {
   }, [activeScreen, mapReturn]);
 
   const openCourse = (course: CourseSummary) => {
-    if (course.detail) { setMapCourse(course.detail); setMapReturn(activeScreen === "saved" ? "saved" : "home"); setActiveScreen("map"); return; }
+    if (course.detail) {
+      setMapCourse(course.detail);
+      setMapReturn(activeScreen === "saved" ? "saved" : "home");
+      setActiveScreen("map");
+      return;
+    }
     setMapCourse(null);
     setSelectedCourse(course);
     setActiveScreen("detail");
   };
+
+  if (showRecommendOnboarding) {
+    return (
+      <OnboardingPage
+        onComplete={completeRecommendOnboarding}
+        onSkip={completeRecommendOnboarding}
+      />
+    );
+  }
 
   if (showLogin) return <LoginScreen onSkip={() => setShowLogin(false)} />;
 
@@ -63,14 +110,20 @@ export default function AppShell() {
         <div className="min-h-screen pb-20">
           {activeScreen === "home" && (
             <HomeScreen
-              onOpenRecommend={() => setActiveScreen("recommend")}
+              onOpenRecommend={openRecommend}
               onOpenResults={() => setActiveScreen("results")}
               onOpenCourse={openCourse}
             />
           )}
 
-                    <div hidden={activeScreen !== "recommend"}>
-            <RecommendScreen onOpenMap={(result, courseIndex) => { setMapReturn("recommend"); setMapCourse({ result, courseIndex }); setActiveScreen("map"); }} />
+          <div hidden={activeScreen !== "recommend"}>
+            <RecommendScreen
+              onOpenMap={(result, courseIndex) => {
+                setMapReturn("recommend");
+                setMapCourse({ result, courseIndex });
+                setActiveScreen("map");
+              }}
+            />
           </div>
 
           {activeScreen === "results" && (
@@ -88,8 +141,14 @@ export default function AppShell() {
             />
           )}
 
-                    {activeScreen === "map" && mapCourse && (
-            <CourseMap key={`${mapCourse.courseIndex}-${mapCourse.result.courses[mapCourse.courseIndex].title}`} result={mapCourse.result} courseIndex={mapCourse.courseIndex} onBack={() => setActiveScreen(mapReturn)} initiallySaved={mapReturn === "saved"} />
+          {activeScreen === "map" && mapCourse && (
+            <CourseMap
+              key={`${mapCourse.courseIndex}-${mapCourse.result.courses[mapCourse.courseIndex].title}`}
+              result={mapCourse.result}
+              courseIndex={mapCourse.courseIndex}
+              onBack={() => setActiveScreen(mapReturn)}
+              initiallySaved={mapReturn === "saved"}
+            />
           )}
           {activeScreen === "map" && !mapCourse && (
             <MapScreen
@@ -103,7 +162,12 @@ export default function AppShell() {
             <SavedScreen onOpenCourse={openCourse} />
           )}
 
-          {activeScreen === "my" && <MyScreen onOpenSaved={() => setActiveScreen("saved")} onLogin={() => setShowLogin(true)} />}
+          {activeScreen === "my" && (
+            <MyScreen
+              onOpenSaved={() => setActiveScreen("saved")}
+              onLogin={() => setShowLogin(true)}
+            />
+          )}
 
           {activeScreen === "chat" && (
             <ChatScreen
@@ -112,8 +176,17 @@ export default function AppShell() {
             />
           )}
         </div>
+        <BottomNav
+          activeTab={activeTab}
+          onChange={(screen) => {
+            if (screen === "recommend") {
+              openRecommend();
+              return;
+            }
 
-        <BottomNav activeTab={activeTab} onChange={setActiveScreen} />
+            setActiveScreen(screen);
+          }}
+        />
       </div>
 
       {activeScreen !== "chat" && (
